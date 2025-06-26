@@ -39,6 +39,7 @@ jobs:
 
       - name: Run multiply tests
         run: pytest -k test_multiply
+        
       - name: Send Telegram notification
         if: ${{ success() }}
         env:
