@@ -15,7 +15,12 @@ jobs:
           python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install pytest
+        run: |
+          pip install pytest
+          pip install flake8
+
+      - name: Run flake8 (lint)
+        run: flake8 .
 
       - name: Run add tests
         run: pytest -k test_add
