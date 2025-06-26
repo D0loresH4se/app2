@@ -39,3 +39,13 @@ jobs:
 
       - name: Run multiply tests
         run: pytest -k test_multiply
+      - name: Send Telegram notification
+        if: ${{ success() }}
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s -X POST https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage \
+            -d chat_id=$TELEGRAM_CHAT_ID \
+            -d text="✅ Сборка и тесты прошли успешно в GitHub Actions!"
+        
