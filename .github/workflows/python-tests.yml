@@ -32,19 +32,13 @@ jobs:
       - name: Run multiply tests
         run: pytest -k test_multiply
 
-  docker-build:
+  docker-test:
     runs-on: ubuntu-latest
     needs: test
     steps:
       - uses: actions/checkout@v3
       - name: Build test image
         run: docker build -t myapp-tests .
-
-  docker-test:
-    runs-on: ubuntu-latest
-    needs: docker-build
-    steps:
-      - uses: actions/checkout@v3
       - name: Run tests inside Docker
         run: docker run --rm myapp-tests
       - name: Upload test results
@@ -55,7 +49,7 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    needs: [lint, test, docker-build, docker-test]
+    needs: [lint, test, docker-test]
     if: ${{ success() }}
     steps:
       - name: Send Telegram notification
