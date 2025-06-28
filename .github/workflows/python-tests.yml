@@ -7,41 +7,58 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
       - name: Install flake8
         run: pip install flake8
-
       - name: Run flake8
         run: flake8 .
 
   test:
     runs-on: ubuntu-latest
-    needs: lint  # Ждём, пока закончится lint (опционально)
-
+    needs: lint
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
       - name: Install dependencies
         run: pip install pytest
-
       - name: Run add tests
         run: pytest -k test_add
-
       - name: Run multiply tests
         run: pytest -k test_multiply
-        
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build test image
+        run: docker build -t myapp-tests .
+
+  docker-test:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests inside Docker
+        run: docker run --rm myapp-tests
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/results.xml
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [lint, test, docker-build, docker-test]
+    if: ${{ success() }}
+    steps:
       - name: Send Telegram notification
-        if: ${{ success() }}
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -49,15 +66,3 @@ jobs:
           curl -s -X POST https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage \
             -d chat_id=$TELEGRAM_CHAT_ID \
             -d text="✅ Сборка и тесты прошли успешно в GitHub Actions!"
-        
-      - name: Build test image
-        run: docker build -t myapp-tests .
-
-      - name: Run tests
-        run: docker run --rm myapp-tests
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: test-results/results.xml
